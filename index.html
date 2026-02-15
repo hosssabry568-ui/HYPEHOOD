@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYPEHOOD | Premium Dark Store</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap');
+        
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed; inset: 0; z-index: 9999; background: #000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .loader-logo {
+            font-size: 4rem; font-weight: 900; letter-spacing: -2px;
+            background: linear-gradient(90deg, #fff, #333, #fff);
+            background-size: 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: shine 2s infinite linear;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        /* Notification Toast */
+        #notification {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #fff; color: #000; padding: 12px 24px; border-radius: 50px;
+            font-weight: 900; font-size: 14px; z-index: 2000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(255,255,255,0.2); display: flex; align-items: center; gap: 10px;
+        }
+        #notification.show { transform: translateX(-50%) translateY(0); }
+
+        /* Cart Drawer */
+        #cart-drawer {
+            position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px;
+            height: 100%; background: #0a0a0a; z-index: 1000;
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
+        }
+        #cart-drawer.open { right: 0; }
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; z-index: 900; backdrop-filter: blur(5px);
+        }
+
+        /* Inputs */
+        .input-field {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 12px; width: 100%; color: white;
+            font-size: 14px; margin-bottom: 10px; outline: none; transition: 0.3s;
+        }
+        .input-field:focus { border-color: #fff; background: rgba(255,255,255,0.1); }
+
+        /* Social Buttons */
+        .whatsapp-btn, .instagram-btn {
+            position: fixed; left: 30px; z-index: 800; width: 60px; height: 60px;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: 0.3s;
+        }
+        .whatsapp-btn { bottom: 30px; background: #25d366; font-size: 35px; box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4); }
+        .instagram-btn { bottom: 100px; background: radial-gradient(circle at 30% 30%, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5); font-size: 35px; }
+        .whatsapp-btn:hover, .instagram-btn:hover { transform: scale(1.1); }
+        
+        .whatsapp-menu {
+            position: fixed; bottom: 170px; left: 30px; background: #1a1a1a;
+            border-radius: 15px; padding: 10px; display: none; z-index: 800;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Utility */
+        .nav-glass { background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .category-card { background: #0f0f0f; border: 1px solid rgba(255,255,255,0.05); transition: 0.4s; cursor: pointer; }
+        .category-card:hover { background: #fff; color: #000; transform: translateY(-10px); }
+        .product-slot { aspect-ratio: 1/1.2; border: 1px solid rgba(255,255,255,0.1); background: #050505; position: relative; overflow: hidden; transition: 0.3s; }
+        .btn-add { position: absolute; bottom: 0; width: 100%; padding: 1rem; background: #fff; color: #000; font-weight: 900; transform: translateY(100%); transition: 0.3s; }
+        .product-slot:hover .btn-add { transform: translateY(0); }
+        .hidden-section { display: none; }
+        .badge-new { position: absolute; top: 10px; right: 10px; background: #fff; color: #000; padding: 2px 10px; font-size: 10px; font-weight: 900; border-radius: 4px; }
+        .cart-item-img { width: 60px; height: 60px; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+
+        /* AI Bot Cards Integration */
+        .topic-card { background: #111113; border: 1px solid #252527; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); animation: fadeInUp 0.4s ease; }
+        .topic-header { color: #00d2ff; font-size: 14px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .topic-body { font-size: 14px; color: #dcdcdc; line-height: 1.6; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="notification"><i class="fa-solid fa-circle-check"></i> تم الإضافة بنجاح</div>
+
+    <div id="loader">
+        <h1 class="loader-logo">HYPEHOOD</h1>
+        <div class="mt-4 w-40 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div id="bar" class="w-0 h-full bg-white transition-all duration-1000"></div>
+        </div>
+    </div>
+
+    <div class="whatsapp-menu shadow-2xl" id="wa-menu">
+        <p class="text-[10px] text-gray-400 mb-2 px-2">تواصل معنا عبر:</p>
+        <a href="https://wa.me/201281821872" target="_blank" class="block p-2 hover:bg-white/10 rounded transition text-sm">Sales 1 (872)</a>
+        <a href="https://wa.me/201221950658" target="_blank" class="block p-2 hover:bg-white/10 rounded transition text-sm">Sales 2 (658)</a>
+        <a href="https://wa.me/201214979082" target="_blank" class="block p-2 hover:bg-white/10 rounded transition text-sm">Sales 3 (082)</a>
+    </div>
+
+    <a href="https://www.instagram.com/hype._.hood/" target="_blank" class="instagram-btn">
+        <i class="fa-brands fa-instagram text-white"></i>
+    </a>
+    <div class="whatsapp-btn" onclick="toggleWAMenu()">
+        <i class="fa-brands fa-whatsapp text-white"></i>
+    </div>
+
+    <div id="cart-overlay" class="overlay" onclick="toggleCart()"></div>
+    <div id="cart-drawer">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center">
+            <h2 class="text-2xl font-black italic uppercase">Cart / السلة</h2>
+            <button onclick="toggleCart()" class="hover:rotate-90 transition-transform"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        
+        <div id="cart-items-container" class="flex-grow overflow-y-auto p-6 space-y-4">
+            <p class="text-gray-500 text-center mt-10">السلة فارغة حالياً..</p>
+        </div>
+
+        <div class="p-6 border-t border-white/10 bg-black/50 backdrop-blur-md">
+            <div id="checkout-form" class="hidden mb-6">
+                <p class="text-[10px] text-gray-500 mb-3 uppercase tracking-widest font-bold">Shipping Details / بيانات الشحن</p>
+                <input type="text" id="user-name" placeholder="الاسم الكامل" class="input-field">
+                <input type="tel" id="user-phone" placeholder="رقم الموبايل" class="input-field">
+                <input type="text" id="user-address" placeholder="العنوان بالتفصيل" class="input-field">
+            </div>
+
+            <div class="flex justify-between mb-4 font-bold text-xl">
+                <span>Total / الإجمالي</span>
+                <span id="cart-total" class="text-white">0 EGP</span>
+            </div>
+            <button onclick="checkoutWhatsApp()" class="w-full bg-white text-black py-4 font-black rounded-lg hover:bg-gray-200 transition active:scale-95">
+                CONFIRM ORDER (WhatsApp)
+            </button>
+        </div>
+    </div>
+
+    <nav class="fixed top-0 w-full z-[500] nav-glass px-6 py-5">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" onclick="showHome()" class="text-3xl font-black tracking-tighter italic hover:opacity-80 transition">HYPEHOOD</a>
+            <div class="flex items-center gap-6">
+                <button onclick="toggleCart()" class="relative group">
+                    <i class="fa-solid fa-cart-shopping text-xl group-hover:scale-110 transition"></i>
+                    <span id="cart-badge" class="absolute -top-3 -right-3 bg-white text-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-black">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-24">
+        <div id="home-view">
+            <section class="min-h-[70vh] flex flex-col justify-center items-center text-center px-6 relative overflow-hidden">
+                <h2 class="text-5xl md:text-8xl font-black mb-4 animate__animated animate__fadeInDown leading-none">
+                    STREETWEAR<br><span class="text-gray-400 italic">REINVENTED</span>
+                </h2>
+                <p class="text-gray-500 max-w-md mx-auto mb-8 animate__animated animate__fadeInUp">
+                    Explore our premium collection of urban aesthetic wear. Crafted for those who define the culture.
+                </p>
+                <button onclick="scrollToCat()" class="bg-white text-black px-12 py-4 rounded-full font-black hover:scale-110 transition shadow-xl animate__animated animate__zoomIn">
+                    EXPLORE NOW
+                </button>
+            </section>
+
+            <section id="cat-section" class="py-20 px-6 max-w-7xl mx-auto">
+                <h3 class="text-center text-xs font-black tracking-[0.5em] text-gray-500 uppercase mb-12">Collections</h3>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div onclick="openCat('PANTS')" class="category-card p-12 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-socks text-4xl mb-4"></i>
+                        <p class="font-black text-sm tracking-widest uppercase">Pants</p>
+                    </div>
+                    <div onclick="openCat('HOODIES')" class="category-card p-12 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-shirt text-4xl mb-4"></i>
+                        <p class="font-black text-sm tracking-widest uppercase">Hoodies</p>
+                    </div>
+                    <div onclick="openCat('SWEATSHIRTS')" class="category-card p-12 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-shirt text-4xl mb-4"></i>
+                        <p class="font-black text-xs tracking-tighter uppercase">Sweatshirts</p>
+                    </div>
+                    <div onclick="openCat('JACKETS')" class="category-card p-12 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-vest text-4xl mb-4"></i>
+                        <p class="font-black text-sm tracking-widest uppercase">Jackets</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="products-view" class="hidden-section py-20 px-6 max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-16 border-b border-white/10 pb-8">
+                <div>
+                    <h2 id="cat-title" class="text-5xl font-black italic uppercase mb-2"></h2>
+                    <p class="text-gray-500 text-sm">Premium quality selection.</p>
+                </div>
+                <button onclick="showHome()" class="flex items-center gap-2 text-sm font-bold border border-white/20 px-6 py-2 rounded-full hover:bg-white hover:text-black transition">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>العودة للرئيسية</span>
+                </button>
+            </div>
+            <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"></div>
+        </div>
+    </main>
+
+    <footer class="text-center py-12 border-t border-white/10 bg-black">
+        <h2 class="text-2xl font-black italic mb-6">HYPEHOOD</h2>
+        <p class="text-gray-500 text-[10px] tracking-widest uppercase">© 2026 HYPEHOOD. All Rights Reserved.</p>
+    </footer>
+
+    <div id="chat-circle" onclick="toggleChat()" style="position: fixed; bottom: 30px; right: 30px; background: #fff; color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 5px 15px rgba(255,255,255,0.3);">
+        <i class="fa-solid fa-robot" style="font-size: 24px;"></i>
+    </div>
+
+    <div id="chat-box" style="display: none; position: fixed; bottom: 100px; right: 30px; width: 330px; height: 450px; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; z-index: 1000; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="background: #fff; color: #000; padding: 15px; font-weight: 900; display: flex; justify-content: space-between;">
+            <span>HYPEHOOD AI</span>
+            <button onclick="toggleChat()">×</button>
+        </div>
+        <div id="chat-content" style="flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div class="topic-card">
+                <div class="topic-header">Core Status: Active ⚙️</div>
+                <div class="topic-body">مرحباً بك في HYPEHOOD. أنا نظام الذكاء الاصطناعي، كيف يمكنني مساعدتك؟</div>
+            </div>
+        </div>
+        <div style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 5px;">
+            <input type="text" id="chat-input" placeholder="اكتب سؤالك هنا..." style="flex-grow: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 12px;">
+            <button onclick="sendMessage()" style="color: #fff;"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script>
+        const products = [
+            { id: 1, name: "Premium Street Pants", price: 1200, category: "PANTS", icon: "fa-socks" },
+            { id: 2, name: "Oversized Hoodie", price: 1500, category: "HOODIES", icon: "fa-shirt" },
+            { id: 3, name: "Urban Sweatshirt", price: 1100, category: "SWEATSHIRTS", icon: "fa-shirt" },
+            { id: 4, name: "Tech Jacket", price: 2200, category: "JACKETS", icon: "fa-vest" },
+            { id: 5, name: "Cargo V2 Pants", price: 1350, category: "PANTS", icon: "fa-socks" },
+            { id: 6, name: "Minimalist Hoodie", price: 1400, category: "HOODIES", icon: "fa-shirt" },
+            { id: 7, name: "Heavy Sweatshirt", price: 1250, category: "SWEATSHIRTS", icon: "fa-shirt" },
+            { id: 8, name: "Windbreaker Pro", price: 1900, category: "JACKETS", icon: "fa-vest" },
+        ];
+
+        let cart = [];
+        let chatContext = [];
+
+        window.onload = () => {
+            document.getElementById('bar').style.width = '100%';
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            }, 1000);
+        };
+
+        function showNotification(msg) {
+            const n = document.getElementById('notification');
+            n.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${msg}`;
+            n.classList.add('show');
+            setTimeout(() => n.classList.remove('show'), 2500);
+        }
+
+        function showHome() {
+            document.getElementById('home-view').classList.remove('hidden-section');
+            document.getElementById('products-view').classList.add('hidden-section');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function openCat(name) {
+            document.getElementById('home-view').classList.add('hidden-section');
+            document.getElementById('products-view').classList.remove('hidden-section');
+            document.getElementById('cat-title').innerText = name;
+            renderProducts(name);
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function renderProducts(category) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            products.filter(p => p.category === category).forEach(p => {
+                grid.innerHTML += `
+                    <div class="product-slot rounded-xl flex flex-col items-center justify-center p-6 text-center">
+                        <span class="badge-new">NEW</span>
+                        <div class="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                            <i class="fa-solid ${p.icon} text-white/20 text-6xl"></i>
+                        </div>
+                        <h3 class="font-bold mb-2 text-lg">${p.name}</h3>
+                        <p class="text-gray-400 font-bold">${p.price} EGP</p>
+                        <button onclick="addToCart(${p.id})" class="btn-add italic">ADD TO CART +</button>
+                    </div>
+                `;
+            });
+        }
+
+        function scrollToCat() {
+            document.getElementById('cat-section').scrollIntoView({behavior: 'smooth'});
+        }
+
+        function toggleCart() {
+            const drawer = document.getElementById('cart-drawer');
+            const overlay = document.getElementById('cart-overlay');
+            drawer.classList.toggle('open');
+            overlay.style.display = drawer.classList.contains('open') ? 'block' : 'none';
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            cart.push({...product, cartId: Date.now()});
+            updateCartUI();
+            showNotification(`تم إضافة ${product.name}`);
+        }
+
+        function removeFromCart(cartId) {
+            cart = cart.filter(item => item.cartId !== cartId);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items-container');
+            const badge = document.getElementById('cart-badge');
+            const totalEl = document.getElementById('cart-total');
+            const form = document.getElementById('checkout-form');
+            badge.innerText = cart.length;
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="h-40 flex flex-col items-center justify-center text-gray-600"><p>السلة فارغة</p></div>';
+                totalEl.innerText = "0 EGP";
+                form.classList.add('hidden');
+                return;
+            }
+            form.classList.remove('hidden');
+            container.innerHTML = '';
+            let total = 0;
+            cart.forEach(item => {
+                total += item.price;
+                container.innerHTML += `<div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl">
+                    <div class="cart-item-img"><i class="fa-solid ${item.icon} text-white/20"></i></div>
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-sm mb-1">${item.name}</h4>
+                        <p class="text-xs text-gray-400">${item.price} EGP</p>
+                    </div>
+                    <button onclick="removeFromCart(${item.cartId})" class="text-gray-600"><i class="fa-solid fa-trash-can"></i></button>
+                </div>`;
+            });
+            totalEl.innerText = total + " EGP";
+        }
+
+        function checkoutWhatsApp() {
+            const name = document.getElementById('user-name').value;
+            const phone = document.getElementById('user-phone').value;
+            const address = document.getElementById('user-address').value;
+            if (!name || !phone || !address || cart.length === 0) return alert("اكمل البيانات أولاً");
+            let msg = `طلب جديد:\nالاسم: ${name}\nالموبايل: ${phone}\nالعنوان: ${address}\nالمنتجات:\n` + cart.map(i => `- ${i.name}`).join("\n");
+            window.open(`https://wa.me/201281821872?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function toggleWAMenu() {
+            const menu = document.getElementById('wa-menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        /* AI Chat Functions Integrated with Pyroid Server */
+        function toggleChat() {
+            const box = document.getElementById('chat-box');
+            box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'flex' : 'none';
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const content = document.getElementById('chat-content');
+            const val = input.value.trim();
+            if (!val) return;
+
+            content.innerHTML += `<div style="background: #fff; color: #000; padding: 8px 12px; border-radius: 10px; align-self: flex-end; font-weight:bold;">${val}</div>`;
+            chatContext.push({ role: "user", content: val });
+            input.value = '';
+            content.scrollTop = content.scrollHeight;
+
+            const aiId = "id-" + Date.now();
+            content.innerHTML += `<div class="topic-card" id="${aiId}">جاري التفكير...</div>`;
+
+            try {
+                // استدعاء السيرفر (تم تغيير الرابط ليعمل على البيئة الحالية)
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: val,
+                        context: chatContext.slice(-10)
+                    })
+                });
+                const data = await res.json();
+                
+                const aiResponse = data.choices && data.choices[0] ? data.choices[0].message.content : "حدث خطأ في الرد من السيرفر.";
+                document.getElementById(aiId).innerHTML = `<div class="topic-header">HYPEHOOD AI ⚙️</div><div class="topic-body">${aiResponse}</div>`;
+                chatContext.push({ role: "assistant", content: aiResponse });
+                
+                content.scrollTop = content.scrollHeight;
+            } catch (e) { 
+                document.getElementById(aiId).innerText = "تأكد من تشغيل السيرفر أولاً!"; 
+            }
+        }
+        document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+    </script>
+</body>
+</html>
